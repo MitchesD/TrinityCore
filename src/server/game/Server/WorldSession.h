@@ -56,8 +56,6 @@ struct DeclinedName;
 struct ItemTemplate;
 struct MovementInfo;
 
-namespace lfg
-{
 struct LfgJoinResultData;
 struct LfgPlayerBoot;
 struct LfgProposal;
@@ -65,7 +63,6 @@ struct LfgQueueStatusData;
 struct LfgPlayerRewardData;
 struct LfgRoleCheck;
 struct LfgUpdateData;
-}
 
 namespace rbac
 {
@@ -342,6 +339,29 @@ namespace WorldPackets
         class CancelTempEnchantment;
         class TransmogrifyItems;
         class UseCritterItem;
+    }
+
+    namespace LFG
+    {
+        class LFGJoinResult;
+        class LFGListGetStatus;
+        //class LFGListJoinRequest;
+        class LFGListJoinResul;
+        class LFGListUpdateStatus;
+        class LFGListUpdateBlacklist;
+        class LFGListJoin;
+        class LFGListUpdateRequest;
+        class LFGListLeave;
+        class LFGQueueStatus;
+        class DfGetJoinStatus;
+        class DfGetSystemInfo;
+        class DfJoin;
+        class DfProposalResponse;
+        class DfSetRoles;
+        class DfSetComment;
+        class DfBootPlayerVote;
+        class DfLeave;
+        class DfTeleport;
     }
 
     namespace Loot
@@ -1478,29 +1498,38 @@ class WorldSession
         void HandleInstanceLockResponse(WorldPackets::Instance::InstanceLockResponse& packet);
 
         // Looking for Dungeon/Raid
-        void HandleLfgSetCommentOpcode(WorldPacket& recvData);
-        void HandleDFGetSystemInfo(WorldPacket& recvData);
-        void SendLfgPlayerLockInfo();
+        void HandleLfgSetCommentOpcode(WorldPackets::LFG::DfSetComment& packet);
+        void HandleDFGetSystemInfo(WorldPackets::LFG::DfGetSystemInfo& packet);
+        void SendLfgPlayerInfo();
         void SendLfgPartyLockInfo();
         void HandleLfgJoinOpcode(WorldPacket& recvData);
-        void HandleLfgLeaveOpcode(WorldPacket& recvData);
-        void HandleLfgSetRolesOpcode(WorldPacket& recvData);
-        void HandleLfgProposalResultOpcode(WorldPacket& recvData);
-        void HandleLfgSetBootVoteOpcode(WorldPacket& recvData);
-        void HandleLfgTeleportOpcode(WorldPacket& recvData);
-        void HandleLfrJoinOpcode(WorldPacket& recvData);
-        void HandleLfrLeaveOpcode(WorldPacket& recvData);
-        void HandleDFGetJoinStatus(WorldPacket& recvData);
+        void HandleLfgLeaveOpcode(WorldPackets::LFG::DfLeave& packet);
+        void HandleLfgSetRolesOpcode(WorldPackets::LFG::DfSetRoles& packet);
+        void HandleLfgProposalResultOpcode(WorldPackets::LFG::DfProposalResponse& packet);
+        void HandleLfgSetBootVoteOpcode(WorldPackets::LFG::DfBootPlayerVote& packet);
+        void HandleLfgTeleportOpcode(WorldPackets::LFG::DfTeleport& packet);
+        void HandleDFGetJoinStatus(WorldPackets::LFG::DfGetJoinStatus& packet);
+        
 
-        void SendLfgUpdateStatus(lfg::LfgUpdateData const& updateData, bool party);
+        // new lfg stuff    
+        void HandleDfJoinOpcode(WorldPackets::LFG::DfJoin& packet);
+        void HandleLfgListGetStatus(WorldPackets::LFG::LFGListGetStatus& packet);
+        void HandleLfgListJoin(WorldPackets::LFG::LFGListJoin& packet);
+        void HandleLfgListLeave(WorldPackets::LFG::LFGListLeave& packet);
+        void HandleLfgListUpdateRequest(WorldPackets::LFG::LFGListUpdateRequest& packet);
+        void SendLfgListJoinResult(LfgJoinResultData const& joinData); // Could make LfgListJoinResultData if you really want to!
+        void SendLfgListUpdateStatus(LfgUpdateData const& updateData, bool Party); // ^^
+        //void SendLfgListUpdateBlacklist(LfgBlackListData const& blackListData); // why this? not needed
+
+        void SendLfgJoinResult(LfgJoinResultData const& joinData);
+        void SendLfgQueueStatus(LfgQueueStatusData const& queueData);
+        void SendLfgUpdateStatus(LfgUpdateData const& updateData, bool party);
         void SendLfgRoleChosen(ObjectGuid guid, uint8 roles);
-        void SendLfgRoleCheckUpdate(lfg::LfgRoleCheck const& pRoleCheck);
+        void SendLfgRoleCheckUpdate(LfgRoleCheck const& pRoleCheck);
         void SendLfgLfrList(bool update);
-        void SendLfgJoinResult(lfg::LfgJoinResultData const& joinData);
-        void SendLfgQueueStatus(lfg::LfgQueueStatusData const& queueData);
-        void SendLfgPlayerReward(lfg::LfgPlayerRewardData const& lfgPlayerRewardData);
-        void SendLfgBootProposalUpdate(lfg::LfgPlayerBoot const& boot);
-        void SendLfgUpdateProposal(lfg::LfgProposal const& proposal);
+        void SendLfgPlayerReward(LfgPlayerRewardData const& lfgPlayerRewardData);
+        void SendLfgBootProposalUpdate(LfgPlayerBoot const& boot);
+        void SendLfgUpdateProposal(LfgProposal const& proposal);
         void SendLfgDisabled();
         void SendLfgOfferContinue(uint32 dungeonEntry);
         void SendLfgTeleportError(uint8 err);

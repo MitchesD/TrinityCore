@@ -20,9 +20,10 @@
 
 #include "Common.h"
 #include "ObjectGuid.h"
+#include "LFGPackets.h"
 
-namespace lfg
-{
+class Player;
+class Group;
 
 enum LFGEnum
 {
@@ -109,16 +110,129 @@ struct LfgLockInfoData
     float currentItemLevel;
 };
 
+struct LfgBlackListData
+{
+    LfgBlackListData(int32 _slot = 0, int32 _reason = 0, int32 _sub1 = 0, int32 _sub2 = 0) : 
+        Slot(_slot), Reason(_reason), SubReason1(_sub1), SubReason2(_sub2), Guid() { }
+
+    int32 Slot;
+    int32 Reason;
+    int32 SubReason1;
+    int32 SubReason2;
+    ObjectGuid Guid;
+};
+
 typedef std::set<uint32> LfgDungeonSet;
 typedef std::map<uint32, LfgLockInfoData> LfgLockMap;
 typedef std::map<ObjectGuid, LfgLockMap> LfgLockPartyMap;
 typedef std::map<ObjectGuid, uint8> LfgRolesMap;
 typedef std::map<ObjectGuid, ObjectGuid> LfgGroupsMap;
+typedef std::map<ObjectGuid, LfgBlackListData> LfgBlackListMap;
+//typedef std::map<ObjectGuid, LfgRideTicket> RideTicketMap;
 
 std::string ConcatenateDungeons(LfgDungeonSet const& dungeons);
 std::string GetRolesString(uint8 roles);
 std::string GetStateString(LfgState state);
 
-} // namespace lfg
+class LfgPlayerData
+{
+public:
+    LfgPlayerData() : m_State(LFG_STATE_NONE), m_OldState(LFG_STATE_NONE), m_Team(0), m_Group(), m_Roles(0), m_Comment("") { }
+    ~LfgPlayerData() { }
+
+    // General
+    void SetState(LfgState state);
+    void RestoreState();
+    void SetTeam(uint8 team);
+    void SetGroup(ObjectGuid group);
+
+    // Queue
+    void SetRoles(uint8 roles);
+    void SetComment(std::string const& comment);
+    void SetSelectedDungeons(const LfgDungeonSet& dungeons);
+
+    // General
+    LfgState GetState() const;
+    LfgState GetOldState() const;
+    uint8 GetTeam() const;
+    ObjectGuid GetGroup() const;
+
+    // Queue
+    uint8 GetRoles() const;
+    std::string const& GetComment() const;
+    LfgDungeonSet const& GetSelectedDungeons() const;
+
+private:
+    // General
+    LfgState m_State;                                  ///< State if group in LFG
+    LfgState m_OldState;                               ///< Old State - Used to restore state after failed Rolecheck/Proposal
+    // Player
+    uint8 m_Team;                                      ///< Player team - determines the queue to join
+    ObjectGuid m_Group;                                ///< Original group of player when joined LFG
+
+    // Queue
+    uint8 m_Roles;                                     ///< Roles the player selected when joined LFG
+    std::string m_Comment;                             ///< Player comment used when joined LFG
+    LfgDungeonSet m_SelectedDungeons;                  ///< Selected Dungeons when joined LFG
+};
+
+enum LfgGroupEnum
+{
+    LFG_GROUP_MAX_KICKS = 3,
+};
+
+/**
+Stores all lfg data needed about a group.
+*/
+class LfgGroupData
+{
+public:
+    LfgGroupData() : m_State(LFG_STATE_NONE), m_OldState(LFG_STATE_NONE), m_Leader(), m_Dungeon(0), m_KicksLeft(LFG_GROUP_MAX_KICKS), m_VoteKickActive(false) { }
+    ~LfgGroupData() { }
+
+    bool IsLfgGroup();
+
+    // General
+    void SetState(LfgState state);
+    void RestoreState();
+    void AddPlayer(ObjectGuid guid);
+    uint8 RemovePlayer(ObjectGuid guid);
+    void RemoveAllPlayers();
+    void SetLeader(ObjectGuid guid);
+
+    // Dungeon
+    void SetDungeon(uint32 dungeon);
+
+    // VoteKick
+    void DecreaseKicksLeft();
+
+    // General
+    LfgState GetState() const;
+    LfgState GetOldState() const;
+    GuidSet const& GetPlayers() const;
+    uint8 GetPlayerCount() const;
+    ObjectGuid GetLeader() const;
+
+    // Dungeon
+    uint32 GetDungeon(bool asId = true) const;
+
+    // VoteKick
+    uint8 GetKicksLeft() const;
+
+    void SetVoteKick(bool active);
+    bool IsVoteKickActive() const;
+
+private:
+    // General
+    LfgState m_State;                                  ///< State if group in LFG
+    LfgState m_OldState;                               ///< Old State
+    ObjectGuid m_Leader;                               ///< Leader GUID
+    GuidSet m_Players;                                 ///< Players in group
+    // Dungeon
+    uint32 m_Dungeon;                                  ///< Dungeon entry
+    // Vote Kick
+    uint8 m_KicksLeft;                                 ///< Number of kicks left
+    bool m_VoteKickActive;
+};
 
 #endif

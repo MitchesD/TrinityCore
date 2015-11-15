@@ -19,9 +19,6 @@
 #include "Language.h"
 #include "ObjectMgr.h"
 
-namespace lfg
-{
-
 std::string ConcatenateDungeons(LfgDungeonSet const& dungeons)
 {
     std::string dungeonstr = "";
@@ -102,4 +99,199 @@ std::string GetStateString(LfgState state)
     return std::string(sObjectMgr->GetTrinityStringForDBCLocale(entry));
 }
 
-} // namespace lfg
+void LfgPlayerData::SetState(LfgState state)
+{
+    switch (state)
+    {
+        case LFG_STATE_NONE:
+        case LFG_STATE_FINISHED_DUNGEON:
+            m_Roles = 0;
+            m_SelectedDungeons.clear();
+            m_Comment.clear();
+            // No break on purpose
+        case LFG_STATE_DUNGEON:
+            m_OldState = state;
+            // No break on purpose
+        default:
+            m_State = state;
+    }
+}
+
+void LfgPlayerData::RestoreState()
+{
+    if (m_OldState == LFG_STATE_NONE)
+    {
+        m_SelectedDungeons.clear();
+        m_Roles = 0;
+    }
+    m_State = m_OldState;
+}
+
+void LfgPlayerData::SetTeam(uint8 team)
+{
+    m_Team = team;
+}
+
+void LfgPlayerData::SetGroup(ObjectGuid group)
+{
+    m_Group = group;
+}
+
+void LfgPlayerData::SetRoles(uint8 roles)
+{
+    m_Roles = roles;
+}
+
+void LfgPlayerData::SetComment(std::string const& comment)
+{
+    m_Comment = comment;
+}
+
+void LfgPlayerData::SetSelectedDungeons(LfgDungeonSet const& dungeons)
+{
+    m_SelectedDungeons = dungeons;
+}
+
+LfgState LfgPlayerData::GetState() const
+{
+    return m_State;
+}
+
+LfgState LfgPlayerData::GetOldState() const
+{
+    return m_OldState;
+}
+
+uint8 LfgPlayerData::GetTeam() const
+{
+    return m_Team;
+}
+
+ObjectGuid LfgPlayerData::GetGroup() const
+{
+    return m_Group;
+}
+
+uint8 LfgPlayerData::GetRoles() const
+{
+    return m_Roles;
+}
+
+std::string const& LfgPlayerData::GetComment() const
+{
+    return m_Comment;
+}
+
+LfgDungeonSet const& LfgPlayerData::GetSelectedDungeons() const
+{
+    return m_SelectedDungeons;
+}
+
+bool LfgGroupData::IsLfgGroup()
+{
+    return m_OldState != LFG_STATE_NONE;
+}
+
+void LfgGroupData::SetState(LfgState state)
+{
+    switch (state)
+    {
+        case LFG_STATE_NONE:
+            m_Dungeon = 0;
+            m_KicksLeft = LFG_GROUP_MAX_KICKS;
+        case LFG_STATE_FINISHED_DUNGEON:
+        case LFG_STATE_DUNGEON:
+            m_OldState = state;
+            // No break on purpose
+        default:
+            m_State = state;
+    }
+}
+
+void LfgGroupData::RestoreState()
+{
+    m_State = m_OldState;
+}
+
+void LfgGroupData::AddPlayer(ObjectGuid guid)
+{
+    m_Players.insert(guid);
+}
+
+uint8 LfgGroupData::RemovePlayer(ObjectGuid guid)
+{
+    GuidSet::iterator it = m_Players.find(guid);
+    if (it != m_Players.end())
+        m_Players.erase(it);
+    return uint8(m_Players.size());
+}
+
+void LfgGroupData::RemoveAllPlayers()
+{
+    m_Players.clear();
+}
+
+void LfgGroupData::SetLeader(ObjectGuid guid)
+{
+    m_Leader = guid;
+}
+
+void LfgGroupData::SetDungeon(uint32 dungeon)
+{
+    m_Dungeon = dungeon;
+}
+
+void LfgGroupData::DecreaseKicksLeft()
+{
+    if (m_KicksLeft)
+        --m_KicksLeft;
+}
+
+LfgState LfgGroupData::GetState() const
+{
+    return m_State;
+}
+
+LfgState LfgGroupData::GetOldState() const
+{
+    return m_OldState;
+}
+
+GuidSet const& LfgGroupData::GetPlayers() const
+{
+    return m_Players;
+}
+
+uint8 LfgGroupData::GetPlayerCount() const
+{
+    return m_Players.size();
+}
+
+ObjectGuid LfgGroupData::GetLeader() const
+{
+    return m_Leader;
+}
+
+uint32 LfgGroupData::GetDungeon(bool asId /* = true */) const
+{
+    if (asId)
+        return (m_Dungeon & 0x00FFFFFF);
+    else
+        return m_Dungeon;
+}
+
+uint8 LfgGroupData::GetKicksLeft() const
+{
+    return m_KicksLeft;
+}
+
+void LfgGroupData::SetVoteKick(bool active)
+{
+    m_VoteKickActive = active;
+}
+
+bool LfgGroupData::IsVoteKickActive() const
+{
+    return m_VoteKickActive;
+}
+

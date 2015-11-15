@@ -23533,14 +23533,14 @@ PartyResult Player::CanUninviteFromGroup(ObjectGuid guidMember) const
         if (!sLFGMgr->GetKicksLeft(gguid))
             return ERR_PARTY_LFG_BOOT_LIMIT;
 
-        lfg::LfgState state = sLFGMgr->GetState(gguid);
+        LfgState state = sLFGMgr->GetState(gguid);
         if (sLFGMgr->IsVoteKickActive(gguid))
             return ERR_PARTY_LFG_BOOT_IN_PROGRESS;
 
-        if (grp->GetMembersCount() <= lfg::LFG_GROUP_KICK_VOTES_NEEDED)
+        if (grp->GetMembersCount() <= LFG_GROUP_KICK_VOTES_NEEDED)
             return ERR_PARTY_LFG_BOOT_TOO_FEW_PLAYERS;
 
-        if (state == lfg::LFG_STATE_FINISHED_DUNGEON)
+        if (state == LFG_STATE_FINISHED_DUNGEON)
             return ERR_PARTY_LFG_BOOT_DUNGEON_COMPLETE;
 
         if (grp->isRollLootActive())
@@ -23573,7 +23573,7 @@ PartyResult Player::CanUninviteFromGroup(ObjectGuid guidMember) const
 
 bool Player::isUsingLfg()
 {
-    return sLFGMgr->GetState(GetGUID()) != lfg::LFG_STATE_NONE;
+    return sLFGMgr->GetState(GetGUID()) != LFG_STATE_NONE;
 }
 
 bool Player::inRandomLfgDungeon()

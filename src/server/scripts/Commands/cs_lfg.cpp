@@ -30,12 +30,12 @@ void GetPlayerInfo(ChatHandler* handler, Player* player)
         return;
 
     ObjectGuid guid = player->GetGUID();
-    lfg::LfgDungeonSet dungeons = sLFGMgr->GetSelectedDungeons(guid);
+    LfgDungeonSet dungeons = sLFGMgr->GetSelectedDungeons(guid);
 
-    std::string const& state = lfg::GetStateString(sLFGMgr->GetState(guid));
+    std::string const& state = GetStateString(sLFGMgr->GetState(guid));
     handler->PSendSysMessage(LANG_LFG_PLAYER_INFO, player->GetName().c_str(),
-        state.c_str(), uint8(dungeons.size()), lfg::ConcatenateDungeons(dungeons).c_str(),
-        lfg::GetRolesString(sLFGMgr->GetRoles(guid)).c_str(), sLFGMgr->GetComment(guid).c_str());
+        state.c_str(), uint8(dungeons.size()), ConcatenateDungeons(dungeons).c_str(),
+        GetRolesString(sLFGMgr->GetRoles(guid)).c_str(), sLFGMgr->GetComment(guid).c_str());
 }
 
 class lfg_commandscript : public CommandScript
@@ -108,7 +108,7 @@ public:
         }
 
         ObjectGuid guid = groupTarget->GetGUID();
-        std::string const& state = lfg::GetStateString(sLFGMgr->GetState(guid));
+        std::string const& state = GetStateString(sLFGMgr->GetState(guid));
         handler->PSendSysMessage(LANG_LFG_GROUP_INFO, groupTarget->isLFGGroup(),
             state.c_str(), sLFGMgr->GetDungeon(guid));
 

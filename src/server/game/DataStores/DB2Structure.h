@@ -899,6 +899,35 @@ struct KeyChainEntry
     uint8  Key[KEYCHAIN_SIZE];
 };
 
+struct LfgDungeonExpansion
+{
+    uint32 ID;                                                      // 0
+    uint32 LfgID;                                                   // 1
+    uint32 ExpansionLevel;                                          // 2
+    uint32 RandomID;                                                // 3
+    uint32 HardLevelMin;                                            // 4
+    uint32 HardLevelMax;                                            // 5
+    uint32 TargetLevelMin;                                          // 6
+    uint32 TargetLevelMax;                                          // 7
+};
+
+struct LfgDungeonGroup
+{
+    uint32 ID;                                                      // 0
+    LocalizedString Name;                                           // 1
+    uint32 OrderIndex;                                              // 2
+    uint32 ParentGroupID;                                           // 3
+    uint32 TypeID;                                                  // 4
+};
+
+struct LfgDungeonsGroupingMapEntry
+{
+    uint32 ID;                                                      // 0
+    uint32 LfgDungeonsID;                                           // 1
+    uint32 RandomLfgDungeonsId;                                     // 2
+    uint32 GroupID;                                                 // 3
+};
+
 struct MailTemplateEntry
 {
     uint32 ID;                                                      // 0

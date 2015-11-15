@@ -1698,8 +1698,8 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading AreaTrigger script names...");
     sObjectMgr->LoadAreaTriggerScripts();
 
-    TC_LOG_INFO("server.loading", "Loading LFG entrance positions..."); // Must be after areatriggers
-    sLFGMgr->LoadLFGDungeons();
+    TC_LOG_INFO("server.loading", "Loading LFG templates..."); // Must be after areatriggers
+    sLFGMgr->LoadTemplates();
 
     TC_LOG_INFO("server.loading", "Loading Dungeon boss data...");
     sObjectMgr->LoadInstanceEncounters();

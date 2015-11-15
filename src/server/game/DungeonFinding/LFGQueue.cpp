@@ -24,9 +24,6 @@
 #include "LFGMgr.h"
 #include "Log.h"
 
-namespace lfg
-{
-
 /**
    Given a list of guids returns the concatenation using | as delimiter
 
@@ -533,7 +530,7 @@ LfgCompatibility LFGQueue::CheckCompatibility(GuidList check)
 
     // Create a new proposal
     proposal.cancelTime = time(NULL) + LFG_TIME_PROPOSAL;
-    proposal.state = LFG_PROPOSAL_INITIATING;
+    proposal.state = LFG_PROPOSAL_UPDATE;
     proposal.leader.Clear();
     proposal.dungeonId = Trinity::Containers::SelectRandomContainerElement(proposalDungeons);
 
@@ -583,9 +580,7 @@ void LFGQueue::UpdateQueueTimers(uint8 queueId, time_t currTime)
         uint32 queuedTime = uint32(currTime - queueinfo.joinTime);
         uint8 role = PLAYER_ROLE_NONE;
         int32 waitTime = -1;
-        int32 wtTank = waitTimesTankStore[dungeonId].time;
-        int32 wtHealer = waitTimesHealerStore[dungeonId].time;
-        int32 wtDps = waitTimesDpsStore[dungeonId].time;
+        int32 wtByRole[3] = { waitTimesTankStore[dungeonId].time, waitTimesHealerStore[dungeonId].time, waitTimesDpsStore[dungeonId].time };
         int32 wtAvg = waitTimesAvgStore[dungeonId].time;
 
         for (LfgRolesMap::const_iterator itPlayer = queueinfo.roles.begin(); itPlayer != queueinfo.roles.end(); ++itPlayer)
@@ -598,13 +593,13 @@ void LFGQueue::UpdateQueueTimers(uint8 queueId, time_t currTime)
                 waitTime = -1;
                 break;
             case PLAYER_ROLE_TANK:
-                waitTime = wtTank;
+                waitTime = wtByRole[0];
                 break;
             case PLAYER_ROLE_HEALER:
-                waitTime = wtHealer;
+                waitTime = wtByRole[1];
                 break;
             case PLAYER_ROLE_DAMAGE:
-                waitTime = wtDps;
+                waitTime = wtByRole[2];
                 break;
             default:
                 waitTime = wtAvg;
@@ -614,7 +609,7 @@ void LFGQueue::UpdateQueueTimers(uint8 queueId, time_t currTime)
         if (queueinfo.bestCompatible.empty())
             FindBestCompatibleInQueue(itQueue);
 
-        LfgQueueStatusData queueData(queueId, dungeonId, queueinfo.joinTime, waitTime, wtAvg, wtTank, wtHealer, wtDps, queuedTime, queueinfo.tanks, queueinfo.healers, queueinfo.dps);
+        LfgQueueStatusData queueData(queueId, dungeonId, queueinfo.joinTime, waitTime, wtAvg, wtByRole, queuedTime, queueinfo.tanks, queueinfo.healers, queueinfo.dps, 0);
         for (LfgRolesMap::const_iterator itPlayer = queueinfo.roles.begin(); itPlayer != queueinfo.roles.end(); ++itPlayer)
         {
             ObjectGuid pguid = itPlayer->first;
@@ -730,5 +725,3 @@ void LFGQueue::UpdateBestCompatibleInQueue(LfgQueueDataContainer::iterator itrQu
             --queueData.dps;
     }
 }
-
-} // namespace lfg

@@ -20,9 +20,6 @@
 
 #include "LFG.h"
 
-namespace lfg
-{
-
 enum LfgCompatibility
 {
     LFG_COMPATIBILITY_PENDING,
@@ -86,7 +83,6 @@ typedef std::map<ObjectGuid, LfgQueueData> LfgQueueDataContainer;
 class LFGQueue
 {
     public:
-
         // Add/Remove from queue
         std::string GetDetailedMatchRoles(GuidList const& check) const;
         void AddToQueue(ObjectGuid guid);
@@ -142,7 +138,5 @@ class LFGQueue
         GuidList currentQueueStore;                        ///< Ordered list. Used to find groups
         GuidList newToQueueStore;                          ///< New groups to add to queue
 };
-
-} // namespace lfg
 
 #endif
