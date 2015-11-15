@@ -1521,7 +1521,6 @@ class WorldSession
         void SendLfgListUpdateStatus(LfgUpdateData const& updateData, bool Party); // ^^
         //void SendLfgListUpdateBlacklist(LfgBlackListData const& blackListData); // why this? not needed
 
-        void SendLfgJoinResult(LfgJoinResultData const& joinData);
         void SendLfgQueueStatus(LfgQueueStatusData const& queueData);
         void SendLfgUpdateStatus(LfgUpdateData const& updateData, bool party);
         void SendLfgRoleChosen(ObjectGuid guid, uint8 roles);

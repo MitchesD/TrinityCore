@@ -471,27 +471,6 @@ void WorldSession::SendLfgRoleCheckUpdate(LfgRoleCheck const& roleCheck)
     SendPacket(update.Write());
 }
 
-void WorldSession::SendLfgJoinResult(LfgJoinResultData const& joinData)
-{
-    WorldPackets::LFG::LFGJoinResult data;
-
-    data.Ticket.RequesterGuid = _player->GetGUID();
-    data.Ticket.Id = 0;
-    data.Ticket.Type = 2;
-    data.Ticket.Time = 0;
-
-    data.Result = joinData.result;
-    data.ResultDetail = joinData.state;
-    for (LfgLockPartyMap::const_iterator it = joinData.lockmap.begin(); it != joinData.lockmap.end(); ++it)
-    {
-        WorldPackets::LFG::LFGBlackList blackList;
-        BuildLfgBlackListBlock(blackList, it->first, it->second);
-        data.BlackList.push_back(blackList);
-    }
-
-    SendPacket(data.Write());
-}
-
 void WorldSession::SendLfgQueueStatus(LfgQueueStatusData const& queueData)
 {
     TC_LOG_DEBUG("lfg", "SMSG_LFG_QUEUE_STATUS");

@@ -57,8 +57,6 @@ void LFGMgr::JoinLfg(Player* player, uint32 roles, std::vector<uint32> set, std:
 {
     uint8 members = 0;
 
-    WorldPackets::LFG::LFGJoinResult result;
-
     if (Group* group = player->GetGroup())
     {
         for (Group::MemberSlot ref : group->GetMemberSlots())
@@ -68,25 +66,17 @@ void LFGMgr::JoinLfg(Player* player, uint32 roles, std::vector<uint32> set, std:
                 if (CanPlayerJoin(member))
                 {
                     // check for sets
+                    // send LFGJoinResult
                     ++members;
                 }
-                else
-                    result.Result = GetPlayerJoinResult(member);
-   
-                member->GetSession()->SendPacket(result.Write());
+
             }
         }
     }
     else
     {
-        if (!CanPlayerJoin(player))
-            result.Result = GetPlayerJoinResult(player);
-        else
-        {
-            
-        }
-
-        player->GetSession()->SendPacket(result.Write());
+        if (CanPlayerJoin(player))
+            // send LFGJoinResult
     }
 }
 
