@@ -23,6 +23,7 @@
 #include "Guild.h"
 #include "ItemPackets.h"
 
+
 namespace WorldPackets
 {
     namespace Guild
@@ -1015,6 +1016,74 @@ namespace WorldPackets
             void Read() override;
 
             std::set<uint32> AchievementIDs;
+        };
+
+        class GuildQueryRecipes final : public ClientPacket
+        {
+        public:
+            GuildQueryRecipes(WorldPacket&& packet) : ClientPacket(CMSG_GUILD_QUERY_RECIPES, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid GuildGUID;
+        };
+
+        struct KnownRecipes
+        {
+            int32 SkillLineID = 0;
+            std::vector<uint8> SkillLineBitArray;
+        };
+
+        class GuildKnownRecipes final : public ServerPacket
+        {
+        public:
+            GuildKnownRecipes() : ServerPacket(SMSG_GUILD_KNOWN_RECIPES) { }
+
+            WorldPacket const* Write() override;
+
+            std::vector<KnownRecipes> Recipes;
+        };
+
+        class GuildQueryMemberRecipes final : public ClientPacket
+        {
+        public:
+            GuildQueryMemberRecipes(WorldPacket&& packet) : ClientPacket(CMSG_GUILD_QUERY_MEMBER_RECIPES, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid GuildMember;
+            ObjectGuid GuildGUID;
+            uint32 SkillLineID = 0;
+        };
+
+        class GuildMemberRecipes final : public ServerPacket
+        {
+        public:
+            GuildMemberRecipes() : ServerPacket(SMSG_GUILD_MEMBER_RECIPES)
+            {
+                SkillLineBitArray.reserve(300 * 8);
+            }
+
+            WorldPacket const* Write() override;
+
+            ObjectGuid Member;
+            uint32 SkillRank = 0;
+            uint32 SkillLineID = 0;
+            uint32 SkillStep = 0;
+            std::vector<uint8> SkillLineBitArray;
+        };
+
+        class GuildQueryMembersForRecipe final : public ClientPacket
+        {
+        public:
+            GuildQueryMembersForRecipe(WorldPacket&& packet) : ClientPacket(CMSG_GUILD_QUERY_MEMBERS_FOR_RECIPE, std::move(packet)) { }
+
+            void Read() override;
+
+            ObjectGuid GuildGUID;
+            uint32 UniqueBit = 0;
+            uint32 SkillLineID = 0;
+            uint32 SpellID = 0;
         };
     }
 }

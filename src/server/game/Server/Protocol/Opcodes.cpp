@@ -403,10 +403,10 @@ void OpcodeTable::Initialize()
     DEFINE_HANDLER(CMSG_GUILD_OFFICER_REMOVE_MEMBER,                        STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, WorldPackets::Guild::GuildOfficerRemoveMember, &WorldSession::HandleGuildOfficerRemoveMember);
     DEFINE_HANDLER(CMSG_GUILD_PERMISSIONS_QUERY,                            STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, WorldPackets::Guild::GuildPermissionsQuery, &WorldSession::HandleGuildPermissionsQuery);
     DEFINE_HANDLER(CMSG_GUILD_PROMOTE_MEMBER,                               STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, WorldPackets::Guild::GuildPromoteMember, &WorldSession::HandleGuildPromoteMember);
-    DEFINE_HANDLER(CMSG_GUILD_QUERY_MEMBERS_FOR_RECIPE,                     STATUS_UNHANDLED, PROCESS_INPLACE,      WorldPackets::Null, &WorldSession::Handle_NULL);
-    DEFINE_HANDLER(CMSG_GUILD_QUERY_MEMBER_RECIPES,                         STATUS_UNHANDLED, PROCESS_INPLACE,      WorldPackets::Null, &WorldSession::Handle_NULL);
+    DEFINE_HANDLER(CMSG_GUILD_QUERY_MEMBERS_FOR_RECIPE,                     STATUS_LOGGEDIN,  PROCESS_INPLACE,      WorldPackets::Guild::GuildQueryMembersForRecipe, &WorldSession::HandleGuildQueryMembersForRecipe);
+    DEFINE_HANDLER(CMSG_GUILD_QUERY_MEMBER_RECIPES,                         STATUS_LOGGEDIN,  PROCESS_INPLACE,      WorldPackets::Guild::GuildQueryMemberRecipes, &WorldSession::HandleGuildQueryMemberRecipes);
     DEFINE_HANDLER(CMSG_GUILD_QUERY_NEWS,                                   STATUS_LOGGEDIN,  PROCESS_INPLACE,      WorldPackets::Guild::GuildQueryNews, &WorldSession::HandleGuildQueryNews);
-    DEFINE_HANDLER(CMSG_GUILD_QUERY_RECIPES,                                STATUS_UNHANDLED, PROCESS_INPLACE,      WorldPackets::Null, &WorldSession::Handle_NULL);
+    DEFINE_HANDLER(CMSG_GUILD_QUERY_RECIPES,                                STATUS_LOGGEDIN,  PROCESS_INPLACE,      WorldPackets::Guild::GuildQueryRecipes, &WorldSession::HandleGuildQueryRecipes);
     DEFINE_HANDLER(CMSG_GUILD_REPLACE_GUILD_MASTER,                         STATUS_UNHANDLED, PROCESS_INPLACE,      WorldPackets::Null, &WorldSession::Handle_NULL);
     DEFINE_HANDLER(CMSG_GUILD_SET_ACHIEVEMENT_TRACKING,                     STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, WorldPackets::Guild::GuildSetAchievementTracking, &WorldSession::HandleGuildSetAchievementTracking);
     DEFINE_HANDLER(CMSG_GUILD_SET_FOCUSED_ACHIEVEMENT,                      STATUS_LOGGEDIN,  PROCESS_THREADUNSAFE, WorldPackets::Achievement::GuildSetFocusedAchievement, &WorldSession::HandleGuildSetFocusedAchievement);
@@ -1170,10 +1170,10 @@ void OpcodeTable::Initialize()
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_INVITE,                            STATUS_NEVER,        CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_INVITE_DECLINED,                   STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_INVITE_EXPIRED,                    STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
-    DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_KNOWN_RECIPES,                     STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
+    DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_KNOWN_RECIPES,                     STATUS_NEVER,        CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MEMBERS_WITH_RECIPE,               STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MEMBER_DAILY_RESET,                STATUS_NEVER,        CONNECTION_TYPE_REALM);
-    DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MEMBER_RECIPES,                    STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
+    DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MEMBER_RECIPES,                    STATUS_NEVER,        CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MEMBER_UPDATE_NOTE,                STATUS_NEVER,        CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MOVED,                             STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);
     DEFINE_SERVER_OPCODE_HANDLER(SMSG_GUILD_MOVE_STARTING,                     STATUS_UNHANDLED,    CONNECTION_TYPE_REALM);

@@ -975,14 +975,14 @@ struct SkillLineAbilityEntry
     uint32      SpellID;                                    // 2
     uint32      RaceMask;                                   // 3
     uint32      ClassMask;                                  // 4
-    uint32      MinSkillLineRank;                           // 7
-    uint32      SupercedesSpell;                            // 8
-    uint32      AquireMethod;                               // 9
-    uint32      TrivialSkillLineRankHigh;                   // 10
-    uint32      TrivialSkillLineRankLow;                    // 11
-    uint32      NumSkillUps;                                // 12
-    uint32      UniqueBit;                                  // 13
-    uint32      TradeSkillCategoryID;                       // 14
+    uint32      MinSkillLineRank;                           // 5
+    uint32      SupercedesSpell;                            // 6
+    uint32      AquireMethod;                               // 7
+    uint32      TrivialSkillLineRankHigh;                   // 8
+    uint32      TrivialSkillLineRankLow;                    // 9
+    uint32      NumSkillUps;                                // 10
+    uint32      UniqueBit;                                  // 11
+    uint32      TradeSkillCategoryID;                       // 12
 };
 
 struct SkillRaceClassInfoEntry

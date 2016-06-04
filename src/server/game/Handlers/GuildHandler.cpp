@@ -426,3 +426,20 @@ void WorldSession::HandleGuildSetAchievementTracking(WorldPackets::Guild::GuildS
     if (Guild* guild = GetPlayer()->GetGuild())
         guild->HandleSetAchievementTracking(this, packet.AchievementIDs);
 }
+
+void WorldSession::HandleGuildQueryRecipes(WorldPackets::Guild::GuildQueryRecipes& /*packet*/)
+{
+    if (Guild* guild = GetPlayer()->GetGuild())
+        guild->SendGuildKnowRecipes(this);
+}
+
+void WorldSession::HandleGuildQueryMemberRecipes(WorldPackets::Guild::GuildQueryMemberRecipes& packet)
+{
+    if (Guild* guild = GetPlayer()->GetGuild())
+        guild->SendGuildMemberRecipes(this, packet.GuildMember, packet.SkillLineID);
+}
+
+void WorldSession::HandleGuildQueryMembersForRecipe(WorldPackets::Guild::GuildQueryMembersForRecipe& packet)
+{
+    
+}

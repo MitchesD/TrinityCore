@@ -58,6 +58,17 @@ enum GuildMemberData
     GUILD_MEMBER_DATA_ZONEID,
     GUILD_MEMBER_DATA_ACHIEVEMENT_POINTS,
     GUILD_MEMBER_DATA_LEVEL,
+
+    // includes only recipes (spells)
+    GUILD_MEMBER_DATA_PROFESSION_SPELL_ADDED,
+    // includes only recipes (spells)
+    GUILD_MEMBER_DATA_PROFESSION_SPELL_REMOVED,
+    // modifies existing profession
+    GUILD_MEMBER_DATA_PROFESSION_SKILL_UPDATE,
+    // removes existing profession from map
+    GUILD_MEMBER_DATA_PROFESSION_UNLEARNED,
+    // adds new profession to map
+    GUILD_MEMBER_DATA_PROFESSION_LEARNED
 };
 
 enum GuildDefaultRanks
@@ -317,6 +328,18 @@ typedef std::vector <GuildBankRightsAndSlots> GuildBankRightsAndSlotsVec;
 
 typedef std::set <uint8> SlotIds;
 
+struct Profession
+{
+    int32 Rank = 0;
+    int32 Step = 0;
+    std::unordered_set<uint32> Recipes;
+};
+
+typedef std::multimap<ObjectGuid, std::pair<uint32, Profession>> MemberProfessionContainer;
+typedef std::unordered_map<uint32, std::unordered_set<uint32>> GuildProfessionContainer;
+
+#define GUILD_RECIPES_BITS 2400
+
 class TC_GAME_API Guild
 {
 private:
@@ -383,7 +406,7 @@ private:
 
         std::set<uint32> GetTrackedCriteriaIds() const { return m_trackedCriteriaIds; }
         void SetTrackedCriteriaIds(std::set<uint32> criteriaIds) { m_trackedCriteriaIds.swap(criteriaIds); }
-        bool IsTrackingCriteriaId(uint32 criteriaId) const { return m_trackedCriteriaIds.find(criteriaId) != m_trackedCriteriaIds.end();  }
+        bool IsTrackingCriteriaId(uint32 criteriaId) const { return m_trackedCriteriaIds.find(criteriaId) != m_trackedCriteriaIds.end(); }
 
         bool IsOnline() const { return (m_flags & GUILDMEMBER_STATUS_ONLINE); }
 
@@ -400,6 +423,8 @@ private:
 
         inline Player* FindPlayer() const { return ObjectAccessor::FindPlayer(m_guid); }
         inline Player* FindConnectedPlayer() const { return ObjectAccessor::FindConnectedPlayer(m_guid); }
+
+        std::unordered_set<uint32> GetDefaultSkillSpells(uint32 skillId, uint32 skillValue) const;
 
     private:
         ObjectGuid::LowType m_guildId;
@@ -799,8 +824,14 @@ public:
     void HandleNewsSetSticky(WorldSession* session, uint32 newsId, bool sticky);
     void HandleGuildRequestChallengeUpdate(WorldSession* session);
 
-    void UpdateMemberData(Player* player, uint8 dataid, uint32 value);
+    void UpdateMemberData(Player* player, uint8 dataid, uint32 value, ...);
     void OnPlayerStatusChange(Player* player, uint32 flag, bool state);
+
+    void UpdateProfessionSkill(ObjectGuid member, uint32 skillId, uint16 newValue, uint32 step, bool newProfession = false);
+    void RemoveProfession(ObjectGuid member, uint32 skillId);
+    void AddProfessionRecipe(ObjectGuid member, uint32 spellId);
+
+    //std::vector<Profession> GetProfessions() const { return _professions; };
 
     // Send info to client
     void SendGuildRankInfo(WorldSession* session) const;
@@ -812,6 +843,10 @@ public:
     void SendMoneyInfo(WorldSession* session) const;
     void SendLoginInfo(WorldSession* session);
     void SendNewsUpdate(WorldSession* session);
+    void SendGuildKnowRecipes(WorldSession* session);
+    void SendGuildMemberRecipes(WorldSession* session, ObjectGuid memberGuid, uint32 skillID);
+
+    void FillRecipeBitset(std::vector<uint8>& result, std::unordered_set<uint32> recipes);
 
     // Send events
     void SendEventBankMoneyChanged();
@@ -900,6 +935,9 @@ protected:
     LogHolder* m_bankEventLog[GUILD_BANK_MAX_TABS + 1];
     LogHolder* m_newsLog;
     GuildAchievementMgr m_achievementMgr;
+
+    MemberProfessionContainer memberProfessions;
+    GuildProfessionContainer guildProfessions;
 
     uint8 _level;
 

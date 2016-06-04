@@ -828,3 +828,55 @@ void WorldPackets::Guild::GuildSetAchievementTracking::Read()
         AchievementIDs.insert(value);
     }
 }
+
+void WorldPackets::Guild::GuildQueryRecipes::Read()
+{
+    _worldPacket >> GuildGUID;
+}
+
+WorldPacket const* WorldPackets::Guild::GuildKnownRecipes::Write()
+{
+    _worldPacket << uint32(Recipes.size());
+
+    for (auto const& recipe : Recipes)
+    {
+        _worldPacket << uint32(recipe.SkillLineID);
+        if (!recipe.SkillLineBitArray.empty())
+            _worldPacket.append(recipe.SkillLineBitArray.data(), recipe.SkillLineBitArray.size());
+    }
+
+    _worldPacket.FlushBits();
+
+    return &_worldPacket;
+}
+
+void WorldPackets::Guild::GuildQueryMemberRecipes::Read()
+{
+    _worldPacket >> GuildMember;
+    _worldPacket >> GuildGUID;
+    _worldPacket >> SkillLineID;
+}
+
+WorldPacket const* WorldPackets::Guild::GuildMemberRecipes::Write()
+{
+    _worldPacket << Member;
+
+    _worldPacket << uint32(SkillLineID);
+    _worldPacket << uint32(SkillRank);
+    _worldPacket << uint32(SkillStep);
+
+    if (!SkillLineBitArray.empty())
+        _worldPacket.append(SkillLineBitArray.data(), SkillLineBitArray.size());
+
+    _worldPacket.FlushBits();
+
+    return &_worldPacket;
+}
+
+void WorldPackets::Guild::GuildQueryMembersForRecipe::Read()
+{
+    _worldPacket >> GuildGUID;
+    _worldPacket >> SkillLineID;
+    _worldPacket >> SpellID;
+    _worldPacket >> UniqueBit;
+}

@@ -69,6 +69,10 @@ TC_GAME_API MapDifficultyEntry const* GetDownscaledMapDifficultyData(uint32 mapI
 TC_GAME_API PvPDifficultyEntry const* GetBattlegroundBracketByLevel(uint32 mapid, uint32 level);
 TC_GAME_API PvPDifficultyEntry const* GetBattlegroundBracketById(uint32 mapid, BattlegroundBracketId id);
 
+// SkillLineAbility
+typedef std::unordered_map<uint32, SkillLineAbilityEntry const*> SkillLineAbilityContainer;
+SkillLineAbilityEntry const* GetSkillLineAbilityBySpell(uint32 spellId);
+
 // SkillRaceClassInfo
 typedef std::unordered_multimap<uint32, SkillRaceClassInfoEntry const*> SkillRaceClassInfoMap;
 typedef std::pair<SkillRaceClassInfoMap::iterator, SkillRaceClassInfoMap::iterator> SkillRaceClassInfoBounds;

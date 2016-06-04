@@ -3251,6 +3251,9 @@ void Player::LearnSpell(uint32 spell_id, bool dependent, uint32 fromSkill /*= 0*
         GetSession()->SendPacket(packet.Write());
     }
 
+    if (Guild* guild = GetGuild()) // FIXME: maybe to AddSpell
+        guild->UpdateMemberData(this, GUILD_MEMBER_DATA_PROFESSION_SPELL_ADDED, spell_id);
+
     // learn all disabled higher ranks and required spells (recursive)
     if (disabled)
     {
@@ -5294,6 +5297,10 @@ bool Player::UpdateSkillPro(uint16 skillId, int32 chance, uint32 step)
         }
     }
 
+    // update skill rank
+    if (Guild* guild = GetGuild())
+        guild->UpdateMemberData(this, GUILD_MEMBER_DATA_PROFESSION_SKILL_UPDATE, skillId, new_value, step);
+
     UpdateSkillEnchantments(skillId, value, new_value);
     UpdateCriteria(CRITERIA_TYPE_REACH_SKILL_LEVEL, skillId);
     TC_LOG_DEBUG("entities.player.skills", "Player::UpdateSkillPro: Player '%s' (%s), SkillID: %u, Chance: %3.1f%% taken",
@@ -5418,6 +5425,10 @@ void Player::SetSkill(uint16 id, uint16 step, uint16 newVal, uint16 maxVal)
             if (itr->second.uState != SKILL_NEW)
                 itr->second.uState = SKILL_CHANGED;
 
+            // update guild profession map
+            if (Guild* guild = GetGuild())
+                guild->UpdateMemberData(this, GUILD_MEMBER_DATA_PROFESSION_SKILL_UPDATE, id, newVal, step);
+
             LearnSkillRewardedSpells(id, newVal);
             // if skill value is going up, update enchantments after setting the new value
             if (newVal > currVal)
@@ -5443,6 +5454,10 @@ void Player::SetSkill(uint16 id, uint16 step, uint16 newVal, uint16 maxVal)
                 itr->second.uState = SKILL_DELETED;
             else
                 mSkillStatus.erase(itr);
+
+            // remove profession from guild map
+            if (Guild* guild = GetGuild())
+                guild->UpdateMemberData(this, GUILD_MEMBER_DATA_PROFESSION_UNLEARNED, id);
 
             // remove all spells that related to this skill
             for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
@@ -5482,6 +5497,10 @@ void Player::SetSkill(uint16 id, uint16 step, uint16 newVal, uint16 maxVal)
                         SetUInt32Value(PLAYER_PROFESSION_SKILL_LINE_1, id);
                     else if (!GetUInt32Value(PLAYER_PROFESSION_SKILL_LINE_1 + 1))
                         SetUInt32Value(PLAYER_PROFESSION_SKILL_LINE_1 + 1, id);
+
+                    // add new profession to guild map
+                    if (Guild* guild = GetGuild())
+                        guild->UpdateMemberData(this, GUILD_MEMBER_DATA_PROFESSION_LEARNED, id, newVal, step);
                 }
 
                 SetUInt16Value(PLAYER_SKILL_LINEID + SKILL_STEP_OFFSET + field, offset, step);

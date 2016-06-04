@@ -29,9 +29,10 @@
 #include "Log.h"
 #include "ScriptMgr.h"
 #include "SocialMgr.h"
-#include "Opcodes.h"
+#include "SpellInfo.h"
 #include "ChatPackets.h"
 #include "CalendarPackets.h"
+#include <boost/dynamic_bitset.hpp>
 
 #define MAX_GUILD_BANK_TAB_TEXT_LEN 500
 #define EMBLEM_PRICE 10 * GOLD
@@ -657,6 +658,42 @@ void Guild::Member::ResetValues(bool weekly /* = false*/)
     }
 }
 
+std::unordered_set<uint32> Guild::Member::GetDefaultSkillSpells(uint32 skillId, uint32 skillValue) const
+{
+    std::unordered_set<uint32> spells;
+
+    uint32 classMask = 1 << (GetClass() - 1);
+
+    for (uint32 j = 0; j < sSkillLineAbilityStore.GetNumRows(); ++j)
+    {
+        SkillLineAbilityEntry const* ability = sSkillLineAbilityStore.LookupEntry(j);
+        if (!ability || ability->SkillLine != skillId)
+            continue;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ability->SpellID);
+        if (!spellInfo)
+            continue;
+
+        if (ability->AquireMethod != SKILL_LINE_ABILITY_LEARNED_ON_SKILL_VALUE && ability->AquireMethod != SKILL_LINE_ABILITY_LEARNED_ON_SKILL_LEARN)
+            continue;
+
+        // Maybe check also for race?
+
+        // Check class if set
+        if (ability->ClassMask && !(ability->ClassMask & classMask))
+            continue;
+
+        // check level, skip class spells if not high enough
+        if (GetLevel() < spellInfo->SpellLevel)
+            continue;
+
+        if (skillValue >= ability->MinSkillLineRank)
+            spells.insert(ability->SpellID);
+    }
+
+    return spells;
+}
+
 // Get amount of money/slots left for today.
 // If (tabId == GUILD_BANK_MAX_TABS) return money amount.
 // Otherwise return remaining items amount for specified tab.
@@ -1201,10 +1238,12 @@ void Guild::SaveToDB()
     CharacterDatabase.CommitTransaction(trans);
 }
 
-void Guild::UpdateMemberData(Player* player, uint8 dataid, uint32 value)
+void Guild::UpdateMemberData(Player* player, uint8 dataid, uint32 value, ...)
 {
     if (Member* member = GetMember(player->GetGUID()))
     {
+        va_list args;
+        va_start(args, value);
         switch (dataid)
         {
             case GUILD_MEMBER_DATA_ZONEID:
@@ -1216,10 +1255,21 @@ void Guild::UpdateMemberData(Player* player, uint8 dataid, uint32 value)
             case GUILD_MEMBER_DATA_LEVEL:
                 member->SetLevel(value);
                 break;
+            case GUILD_MEMBER_DATA_PROFESSION_SKILL_UPDATE:
+            case GUILD_MEMBER_DATA_PROFESSION_LEARNED:
+                UpdateProfessionSkill(member->GetGUID(), value, va_arg(args, uint16), va_arg(args, uint32), dataid == GUILD_MEMBER_DATA_PROFESSION_LEARNED);
+                break;
+            case GUILD_MEMBER_DATA_PROFESSION_UNLEARNED:
+                RemoveProfession(member->GetGUID(), value);
+                break;
+            case GUILD_MEMBER_DATA_PROFESSION_SPELL_ADDED:
+                AddProfessionRecipe(member->GetGUID(), value);
+                break;
             default:
                 TC_LOG_ERROR("guild", "Guild::UpdateMemberData: Called with incorrect DATAID %u (value %u)", dataid, value);
                 return;
         }
+        va_end(args);
         //HandleRoster();
     }
 }
@@ -1295,7 +1345,19 @@ void Guild::HandleRoster(WorldSession* session)
         memberData.GuildReputation = int32(member->GetTotalReputation());
         memberData.LastSave = float(member->IsOnline() ? 0.0f : float(::time(NULL) - member->GetLogoutTime()) / DAY);
 
-        //GuildRosterProfessionData
+        auto professions = memberProfessions.equal_range(member->GetGUID());
+        if (professions.first != professions.second)
+        {
+            uint8 i = 0;
+            for (auto prof = professions.first; prof != professions.second && i < 2; ++prof, ++i)
+            {
+                WorldPackets::Guild::GuildRosterProfessionData profession;
+                profession.DbID = prof->second.first;
+                profession.Rank = prof->second.second.Rank;
+                profession.Step = prof->second.second.Step;
+                memberData.Profession[i] = profession;
+            }
+        }
 
         memberData.VirtualRealmAddress = GetVirtualRealmAddress();
         memberData.Status = member->GetFlags();
@@ -2050,6 +2112,63 @@ void Guild::SendNewsUpdate(WorldSession* session)
     TC_LOG_DEBUG("guild", "SMSG_GUILD_NEWS_UPDATE [%s]", session->GetPlayerInfo().c_str());
 }
 
+void Guild::FillRecipeBitset(std::vector<uint8>& result, std::unordered_set<uint32> recipes)
+{
+    boost::dynamic_bitset<uint8> bits(GUILD_RECIPES_BITS);
+
+    for (uint32 spellId : recipes)
+    {
+        SkillLineAbilityEntry const* skillInfo = GetSkillLineAbilityBySpell(spellId);
+        if (!skillInfo)
+            continue;
+
+        if (skillInfo->UniqueBit)
+            bits.set(skillInfo->UniqueBit);
+    }
+
+    boost::to_block_range(bits, std::back_inserter(result));
+}
+
+void Guild::SendGuildKnowRecipes(WorldSession* session)
+{
+    WorldPackets::Guild::GuildKnownRecipes data;
+
+    for (auto const& item : guildProfessions)
+    {
+        WorldPackets::Guild::KnownRecipes recipe;
+        recipe.SkillLineID = item.first;
+        FillRecipeBitset(recipe.SkillLineBitArray, item.second);
+        data.Recipes.push_back(recipe);
+    } 
+
+    session->SendPacket(data.Write());
+}
+
+void Guild::SendGuildMemberRecipes(WorldSession* session, ObjectGuid memberGuid, uint32 skillID)
+{
+    WorldPackets::Guild::GuildMemberRecipes data;
+
+    Member* member = GetMember(memberGuid);
+
+    auto professions = memberProfessions.equal_range(member->GetGUID());
+    if (professions.first != professions.second)
+    {
+        for (auto prof = professions.first; prof != professions.second; ++prof)
+        {
+            if (prof->second.first == skillID)
+            {
+                data.Member = memberGuid;
+                data.SkillLineID = skillID;
+                data.SkillRank = prof->second.second.Rank;
+                data.SkillStep = prof->second.second.Step;
+                FillRecipeBitset(data.SkillLineBitArray, prof->second.second.Recipes);
+            }
+        }
+    }
+
+    session->SendPacket(data.Write());
+}
+
 void Guild::SendBankLog(WorldSession* session, uint8 tabId) const
 {
     // GUILD_BANK_MAX_TABS send by client for money log
@@ -2292,12 +2411,60 @@ void Guild::LoadRankFromDB(Field* fields)
 bool Guild::LoadMemberFromDB(Field* fields)
 {
     ObjectGuid::LowType lowguid = fields[1].GetUInt64();
-    Member *member = new Member(m_id, ObjectGuid::Create<HighGuid::Player>(lowguid), fields[2].GetUInt8());
+    Member* member = new Member(m_id, ObjectGuid::Create<HighGuid::Player>(lowguid), fields[2].GetUInt8());
     if (!member->LoadFromDB(fields))
     {
         _DeleteMemberFromDB(lowguid);
         delete member;
         return false;
+    }
+
+    // Load professions
+    QueryResult result = CharacterDatabase.PQuery("SELECT skill, value, max FROM character_skills WHERE guid = '%u'", lowguid);
+    if (result)
+    {
+        do
+        {
+            Field* skill = result->Fetch();
+            int32 skillId = skill[0].GetInt32();
+            int32 value = skill[1].GetInt32();
+            int32 max = skill[2].GetInt32();
+
+            SkillLineEntry const* skillLine = sSkillLineStore.LookupEntry(skillId);
+            if (!skillLine)
+                continue;
+
+            if (skillLine->CategoryID == SKILL_CATEGORY_PROFESSION)
+            {
+                int32 step = max / 75;
+
+                Profession profession;
+                profession.Rank = value;
+                profession.Step = step;
+
+                // Get default recipes which aren't saved in DB
+                std::unordered_set<uint32> defaultRecipes = member->GetDefaultSkillSpells(skillId, value);
+                profession.Recipes.insert(defaultRecipes.begin(), defaultRecipes.end());
+
+                // Get list of recipes from DB
+                QueryResult res = CharacterDatabase.PQuery("SELECT guid, spell FROM character_spell WHERE guid = '%u'", lowguid);
+                if (res)
+                {
+                    do
+                    {
+                        uint32 spellId = (*res)[1].GetUInt32();
+                        if (SpellInfo const* spell = sSpellMgr->GetSpellInfo(spellId))
+                            if (spell->HasAttribute(SPELL_ATTR0_TRADESPELL))
+                                profession.Recipes.insert(spellId);
+                    } while (res->NextRow());
+                }
+
+                memberProfessions.insert(MemberProfessionContainer::value_type(member->GetGUID(), std::make_pair(skillId, profession)));
+
+                guildProfessions[skillId].insert(profession.Recipes.begin(), profession.Recipes.end());
+            }
+
+        } while (result->NextRow());
     }
 
     m_members[member->GetGUID()] = member;
@@ -3413,4 +3580,87 @@ void Guild::HandleNewsSetSticky(WorldSession* session, uint32 newsId, bool stick
     newsPacket.NewsEvents.reserve(1);
     news->WritePacket(newsPacket);
     session->SendPacket(newsPacket.Write());
+}
+
+void Guild::UpdateProfessionSkill(ObjectGuid member, uint32 skillId, uint16 newValue, uint32 step, bool newProfession)
+{
+    auto professions = memberProfessions.equal_range(member);
+    if (professions.first != professions.second)
+    {
+        if (!newProfession) // update already existing profession
+        {
+            for (auto prof = professions.first; prof != professions.second; ++prof)
+            {
+                if (prof->second.first == skillId)
+                {
+                    prof->second.second.Rank = newValue;
+                    prof->second.second.Step = step;
+                }
+            }
+        }
+        else // add new profession to already existing member
+        {
+            Profession profession;
+            profession.Rank = newValue;
+            profession.Step = step;
+            memberProfessions.emplace(MemberProfessionContainer::value_type(member, std::make_pair(skillId, profession)));
+        }
+    }
+    else if (newProfession) // add new profession to non-existing member in map
+    {
+        Profession profession;
+        profession.Rank = newValue;
+        profession.Step = step;
+        memberProfessions.insert(MemberProfessionContainer::value_type(member, std::make_pair(skillId, profession)));
+    }
+}
+
+void Guild::RemoveProfession(ObjectGuid member, uint32 skillId)
+{
+    auto professions = memberProfessions.equal_range(member);
+    if (professions.first == professions.second)
+        return;
+
+    // remove from member professions
+    for (auto prof = professions.first; prof != professions.second; ++prof)
+        if (prof->second.first == skillId)
+            prof = memberProfessions.erase(prof);
+  
+    auto itr = guildProfessions.find(skillId);
+    if (itr == guildProfessions.end())
+        return;
+
+    // clear list of recipes
+    itr->second.clear();
+
+    // regenerate guild recipes for that skillId
+    for (auto const& skill : memberProfessions)
+    {
+        if (skill.second.first == skillId)
+            for (auto const& recipe : skill.second.second.Recipes)
+                itr->second.insert(recipe);
+    }
+}
+
+void Guild::AddProfessionRecipe(ObjectGuid member, uint32 spellId)
+{
+    SkillLineAbilityEntry const* skillInfo = GetSkillLineAbilityBySpell(spellId);
+    if (!skillInfo)
+        return;
+
+    SpellInfo const* spell = sSpellMgr->GetSpellInfo(spellId);
+    if (!spell)
+        return;
+
+    if (!spell->HasAttribute(SPELL_ATTR0_TRADESPELL))
+        return;
+
+    auto professions = memberProfessions.equal_range(member);
+    // when member already has profession, simply add new recipe
+    if (professions.first != professions.second)
+    {  
+        for (auto prof = professions.first; prof != professions.second; ++prof)
+            if (prof->second.first == skillInfo->SkillLine)
+                prof->second.second.Recipes.insert(spellId);
+    }
 }

@@ -124,6 +124,7 @@ DBCStorage<QuestFactionRewEntry>            sQuestFactionRewardStore(QuestFactio
 DBCStorage<RandomPropertiesPointsEntry>     sRandomPropertiesPointsStore(RandPropPointsfmt);
 
 DBCStorage<SkillLineAbilityEntry>           sSkillLineAbilityStore(SkillLineAbilityfmt);
+SkillLineAbilityContainer                   sSkillLineAbilities;
 DBCStorage<SkillLineEntry>                  sSkillLineStore(SkillLinefmt);
 DBCStorage<SkillRaceClassInfoEntry>         sSkillRaceClassInfoStore(SkillRaceClassInfofmt);
 SkillRaceClassInfoMap                       SkillRaceClassInfoBySkill;
@@ -478,6 +479,10 @@ void LoadDBCStores(const std::string& dataPath, uint32 defaultLocale)
     for (uint32 i = 0; i < sWMOAreaTableStore.GetNumRows(); ++i)
         if (WMOAreaTableEntry const* entry = sWMOAreaTableStore.LookupEntry(i))
             sWMOAreaInfoByTripple.insert(WMOAreaInfoByTripple::value_type(WMOAreaTableTripple(entry->WMOID, entry->NameSet, entry->WMOGroupID), entry));
+
+    for (uint32 i = 0; i < sSkillLineAbilityStore.GetNumRows(); ++i)
+        if (SkillLineAbilityEntry const* ability = sSkillLineAbilityStore.LookupEntry(i))
+            sSkillLineAbilities[ability->SpellID] = ability;
 
     // error checks
     if (bad_dbc_files.size() >= DBCFileCount)
@@ -918,4 +923,13 @@ void DeterminaAlternateMapPosition(uint32 mapId, float x, float y, float z, uint
 
     newPos->X = x + transformation->RegionOffset.X;
     newPos->Y = y + transformation->RegionOffset.Y;
+}
+
+SkillLineAbilityEntry const* GetSkillLineAbilityBySpell(uint32 spellId)
+{
+    auto itr = sSkillLineAbilities.find(spellId);
+    if (itr != sSkillLineAbilities.end())
+        return itr->second;
+
+    return nullptr;
 }
